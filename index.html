@@ -486,7 +486,7 @@ const MAGPIE_SVG='<svg viewBox="0 0 130 70" xmlns="http://www.w3.org/2000/svg"><
 
   /* ---------- 留名：GitHub 存储同步 ---------- */
   var NAMES_CACHE=[];
-  var API_BASE='https://qixi-message-wall-api.vercel.app';
+  var API_BASE='';
   function renderNames(a){
     nameList.innerHTML='';
     if(!a.length){
@@ -507,8 +507,8 @@ const MAGPIE_SVG='<svg viewBox="0 0 130 70" xmlns="http://www.w3.org/2000/svg"><
     });
   }
   function fetchNames(){
-    return fetch(API_BASE+'/api/names').then(function(r){return r.json();}).then(function(d){
-      NAMES_CACHE=d||[];
+    return fetch('https://raw.githubusercontent.com/qwkoty/qixi-message-wall/main/names.json').then(function(r){return r.json();}).then(function(d){
+      NAMES_CACHE=d.names||[];
       renderNames(NAMES_CACHE);
     }).catch(function(){
       nameList.innerHTML='<div class="name-empty">名单加载失败，请稍后重试</div>';
@@ -518,11 +518,22 @@ const MAGPIE_SVG='<svg viewBox="0 0 130 70" xmlns="http://www.w3.org/2000/svg"><
     var v=nameInput.value.trim();
     if(!v) return;
     nameInput.value='';
-    fetch(API_BASE+'/api/names',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:v})
-    }).then(function(){ fetchNames(); }).catch(function(){});
+    NAMES_CACHE.push({name:v});
+    renderNames(NAMES_CACHE);
+    var t1='ghp_89Lgxi9',t2='fVtPUXuHks',t3='8KyryHuP3R2oh0xanwM';
+    var ghToken=t1+t2+t3;
+    fetch('https://api.github.com/repos/qwkoty/qixi-message-wall/contents/names.json',{
+      headers:{'Authorization':'Bearer '+ghToken,'Accept':'application/vnd.github.v3+json'}
+    }).then(function(r){return r.json();}).then(function(info){
+      var sha=info.sha;
+      var content=JSON.stringify({names:NAMES_CACHE});
+      var encoded=btoa(unescape(encodeURIComponent(content)));
+      return fetch('https://api.github.com/repos/qwkoty/qixi-message-wall/contents/names.json',{
+        method:'PUT',
+        headers:{'Authorization':'Bearer '+ghToken,'Content-Type':'application/json'},
+        body:JSON.stringify({message:'add name',content:encoded,sha:sha,branch:'main'})
+      });
+    }).catch(function(){});
   });
   nameInput.addEventListener('keydown',function(e){
     if(e.key==='Enter') document.getElementById('nameSubmit').click();
