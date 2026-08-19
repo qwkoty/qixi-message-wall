@@ -484,45 +484,45 @@ const MAGPIE_SVG='<svg viewBox="0 0 130 70" xmlns="http://www.w3.org/2000/svg"><
     setTimeout(()=>m.remove(),(parseFloat(dur)+parseFloat(delay))*1000+300);
   }
 
-  /* ---------- 留名：服务端实时同步 ---------- */
+  /* ---------- 留名：GitHub 存储同步 ---------- */
+  var NAMES_CACHE=[];
+  var API_BASE='https://qixi-message-wall-api.vercel.app';
   function renderNames(a){
     nameList.innerHTML='';
     if(!a.length){
       nameList.innerHTML='<div class="name-empty">还没有人留下名字，来抢第一</div>';
       return;
     }
-    const total=a.length;
+    var total=a.length;
     a.slice().reverse().forEach(function(it,i){
-      const row=document.createElement('div');
+      var row=document.createElement('div');
       row.className='name-row';
       row.style.animationDelay=(Math.min(i,10)*0.05)+'s';
-      const idx=document.createElement('span');
+      var idx=document.createElement('span');
       idx.className='idx'; idx.textContent=(total-i)+'.';
-      const nm=document.createElement('span');
-      nm.className='nm'; nm.textContent=it.name;
+      var nm=document.createElement('span');
+      nm.className='nm'; nm.textContent=it.name || it;
       row.appendChild(idx); row.appendChild(nm);
       nameList.appendChild(row);
     });
   }
   function fetchNames(){
-    return fetch('/api/names').then(function(r){return r.json();}).then(renderNames).catch(function(){
+    return fetch(API_BASE+'/api/names').then(function(r){return r.json();}).then(function(d){
+      NAMES_CACHE=d||[];
+      renderNames(NAMES_CACHE);
+    }).catch(function(){
       nameList.innerHTML='<div class="name-empty">名单加载失败，请稍后重试</div>';
     });
   }
-  // SSE 实时通道：任何人提交，所有打开的页面同步刷新
-  try{
-    const es=new EventSource('/api/stream');
-    es.onmessage=function(e){ try{ renderNames(JSON.parse(e.data)); }catch(_){} };
-  }catch(_){}
   document.getElementById('nameSubmit').addEventListener('click',function(){
-    const v=nameInput.value.trim();
+    var v=nameInput.value.trim();
     if(!v) return;
     nameInput.value='';
-    fetch('/api/names',{
+    fetch(API_BASE+'/api/names',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({name:v})
-    }).then(fetchNames).catch(fetchNames);
+    }).then(function(){ fetchNames(); }).catch(function(){});
   });
   nameInput.addEventListener('keydown',function(e){
     if(e.key==='Enter') document.getElementById('nameSubmit').click();
