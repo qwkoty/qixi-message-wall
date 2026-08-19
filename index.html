@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="only light" />
+<meta name="supported-color-schemes" content="light" />
+<title>七夕 · 祝群友们七夕快乐</title>
+<style>
+  :root{
+    color-scheme:only light;
+    --night-1:#170a33;
+    --night-2:#2a1448;
+    --night-3:#3d1f5c;
+    --gold:#f5d98b;
+    --gold-soft:#ffe9b0;
+    --rose:#ff7fa8;
+    --rose-soft:#ffc2d6;
+    --mist:#d8c7ff;
+    --ink:#f3ecff;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+    -webkit-touch-callout:none;
+    user-select:none;-webkit-user-select:none;}
+  input,textarea{user-select:text;-webkit-user-select:text;}
+  button,input{appearance:none;-webkit-appearance:none;background-clip:padding-box;border-radius:0;}
+  html{background:#04060f;}
+  html,body{height:100%;}
+  body{
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",serif;
+    background:radial-gradient(120% 120% at 50% 0%, var(--night-2) 0%, var(--night-1) 58%, #100623 100%);
+    color:var(--ink);
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+    overscroll-behavior:none;touch-action:manipulation;
+  }
+  /* ---------- 星空画布 ---------- */
+  #stars{position:fixed;inset:0;z-index:0;display:block;}
+  .milky{
+    position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(60% 40% at 20% 15%, rgba(255,199,229,.13), transparent 70%),
+      radial-gradient(70% 50% at 80% 30%, rgba(255,143,171,.13), transparent 70%),
+      linear-gradient(115deg, transparent 36%, rgba(255,176,215,.14) 50%, transparent 64%);
+    transform:rotate(-8deg) scale(1.4);
+    filter:blur(2px);
+  }
+
+  /* ---------- 开场遮罩 ---------- */
+  #intro{
+    position:fixed;inset:0;z-index:50;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:24px;
+    background:radial-gradient(120% 120% at 50% 30%, rgba(46,24,84,.88), rgba(20,9,48,.97));
+    transition:opacity 1.2s ease, visibility 1.2s ease;
+  }
+  #intro.hide{opacity:0;visibility:hidden;}
+  .intro-line{
+    position:relative;z-index:2;
+    font-size:clamp(30px,7vw,64px);
+    letter-spacing:.12em;
+    line-height:1.7;
+    color:#ffedb8;
+    text-shadow:0 0 24px rgba(245,217,139,.5), 0 0 60px rgba(245,217,139,.28), 0 2px 10px rgba(0,0,0,.4);
+    opacity:0;transform:translateY(20px);
+  }
+  .intro-line.play{animation:rise 1.4s ease forwards;}
+  .intro-sub{
+    position:relative;z-index:2;margin-top:22px;
+    font-size:clamp(15px,2.8vw,26px);
+    letter-spacing:.28em;
+    color:#ffd9e6;
+    text-shadow:0 0 22px rgba(255,160,200,.55), 0 0 44px rgba(255,160,200,.3);
+    opacity:0;transform:translateY(16px);
+  }
+  .intro-sub.play{animation:rise 1.4s ease .6s forwards;}
+  #skyMagpies{position:fixed;inset:0;z-index:60;pointer-events:none;overflow:hidden;}
+  .fly-magpie{position:absolute;left:0;width:60px;opacity:0;will-change:transform;}
+  .fly-magpie svg{width:100%;height:auto;display:block;}
+  @keyframes flyAcross{
+    0%{transform:translateX(-16vw) translateY(0) rotate(-8deg);opacity:0;}
+    10%{opacity:1;}
+    50%{transform:translateX(50vw) translateY(-28px) rotate(0deg);}
+    90%{opacity:1;}
+    100%{transform:translateX(116vw) translateY(12px) rotate(8deg);opacity:0;}
+  }
+
+  @keyframes rise{to{opacity:1;transform:translateY(0);}}
+
+  /* ---------- 留名阶段 ---------- */
+  #nameStage{
+    position:fixed;inset:0;z-index:70;
+    perspective:1000px;perspective-origin:50% 40%;
+    display:flex;align-items:center;justify-content:center;padding:24px;
+    background:
+      radial-gradient(80% 60% at 50% 0%, rgba(61,31,92,.55), transparent 70%),
+      radial-gradient(60% 45% at 15% 90%, rgba(255,143,171,.10), transparent 70%),
+      rgba(13,6,36,.93);
+    opacity:0;visibility:hidden;
+    transition:opacity .6s ease, visibility .6s ease;
+  }
+  #nameStage.show{opacity:1;visibility:visible;}
+  .name-card{
+    width:min(92vw,520px);text-align:center;
+    transform-style:preserve-3d;
+    transform:translateZ(0) rotateX(var(--tilt-rx,0deg)) rotateY(var(--tilt-ry,0deg));
+    transition:transform .2s cubic-bezier(.2,.85,.3,1.15);
+    background:linear-gradient(165deg, rgba(46,24,84,.75), rgba(20,9,48,.9));
+    border:1px solid rgba(255,194,214,.2);
+    border-radius:30px;
+    padding:34px 26px 30px;
+    box-shadow:
+      0 26px 60px rgba(0,0,0,.45),
+      inset 0 1px 0 rgba(255,255,255,.06),
+      0 0 80px rgba(255,143,171,.06);
+  }
+  .name-deco{
+    width:58px;height:58px;margin:0 auto 16px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, rgba(255,194,214,.9), rgba(255,143,171,.35) 55%, transparent 72%);
+    box-shadow:0 0 26px rgba(255,143,171,.35);
+  }
+  .name-deco svg{width:26px;height:26px;position:relative;top:50%;left:50%;transform:translate(-50%,-50%);}
+  .name-deco path{fill:#ffe9b0;}
+  .name-title{
+    font-size:clamp(22px,5vw,32px);letter-spacing:.2em;color:var(--gold-soft);
+    text-shadow:0 0 22px rgba(245,217,139,.25);margin-bottom:6px;
+  }
+  .name-sub{
+    font-size:13px;letter-spacing:.22em;color:var(--mist);opacity:.6;margin-bottom:26px;
+  }
+  .name-input-row{display:flex;gap:10px;justify-content:center;margin-bottom:28px;}
+  #nameInput{
+    flex:1;max-width:300px;padding:13px 20px;border-radius:999px;
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,194,214,.3);
+    color:var(--ink);font-size:15px;outline:none;letter-spacing:.05em;
+    transition:border-color .3s ease, box-shadow .3s ease;
+  }
+  #nameInput::placeholder{color:rgba(216,199,255,.4);}
+  #nameInput:focus{
+    border-color:rgba(255,194,214,.9);
+    box-shadow:0 0 0 3px rgba(255,143,171,.15), 0 0 20px rgba(255,143,171,.25);
+  }
+  #nameSubmit{
+    padding:13px 30px;border-radius:999px;border:none;cursor:pointer;
+    background:linear-gradient(135deg,#ff8fab 0%,#f5a95c 100%);
+    color:#3a1024;font-size:15px;font-weight:700;letter-spacing:.12em;
+    box-shadow:0 8px 24px rgba(255,143,171,.35);
+    transition:transform .2s ease, box-shadow .2s ease;
+  }
+  #nameSubmit:active{transform:scale(.94);}
+  .name-list-title{
+    display:flex;align-items:center;gap:12px;
+    font-size:13px;letter-spacing:.3em;color:var(--mist);opacity:.7;margin-bottom:14px;
+  }
+  .name-list-title::before,.name-list-title::after{
+    content:'';flex:1;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(255,143,171,.4));
+  }
+  .name-list-title::after{background:linear-gradient(90deg,rgba(255,143,171,.4),transparent);}
+  .name-list{
+    display:flex;flex-direction:column;gap:8px;align-items:center;
+    max-height:34vh;overflow-y:auto;padding:4px;
+  }
+  .name-row{
+    width:100%;display:flex;align-items:center;gap:12px;
+    padding:9px 14px;border-radius:14px;
+    background:rgba(255,255,255,.045);
+    border:1px solid rgba(255,255,255,.07);
+    animation:tagIn .4s ease backwards;
+  }
+  .name-row .idx{
+    width:28px;height:28px;border-radius:50%;flex:none;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(255,143,171,.14);
+    color:var(--gold-soft);font-size:12px;
+  }
+  .name-row .nm{color:var(--rose-soft);font-size:15px;letter-spacing:.06em;flex:1;text-align:left;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  @keyframes tagIn{from{opacity:0;transform:translateY(12px) scale(.8);}to{opacity:1;transform:translateY(0) scale(1);}}
+  .name-empty{color:rgba(216,199,255,.4);font-size:14px;letter-spacing:.1em;padding:8px 0;}
+  .name-back{
+    margin-top:26px;padding:11px 34px;border-radius:999px;cursor:pointer;
+    background:transparent;border:1px solid rgba(245,217,139,.35);
+    color:var(--gold-soft);font-size:14px;letter-spacing:.2em;
+    transition:background .25s ease, box-shadow .25s ease;
+  }
+  .name-back:hover{background:rgba(245,217,139,.08);box-shadow:0 0 18px rgba(245,217,139,.15);}
+
+  /* ---------- 分幕控制：元素淡出 + 遮罩变透明 + 轻触继续 ---------- */
+  .fade{animation:none!important;opacity:0!important;transition:opacity .7s ease!important;}
+  #intro.dim{
+    background:radial-gradient(120% 120% at 50% 30%, rgba(46,24,84,.42), rgba(20,9,48,.55));
+  }
+  .tap-hint{
+    position:fixed;bottom:9%;left:50%;transform:translateX(-50%);
+    z-index:55;display:flex;flex-direction:column;align-items:center;gap:11px;
+    color:rgba(255,224,180,.9);font-size:19px;letter-spacing:.4em;text-indent:.4em;
+    opacity:0;pointer-events:none;transition:opacity .5s ease;
+  }
+  .tap-hint.show{opacity:1;}
+  .tap-hint .hint-arrow{
+    width:17px;height:17px;border-right:3px solid rgba(255,224,180,.95);
+    border-bottom:3px solid rgba(255,224,180,.95);
+    transform:rotate(45deg);animation:hintBob 1.1s ease-in-out infinite;
+  }
+  @keyframes hintBob{
+    0%,100%{transform:rotate(45deg) translateY(0);opacity:.45;}
+    50%{transform:rotate(45deg) translateY(7px);opacity:1;}
+  }
+
+  /* ---------- 双击撒花瓣粒子 ---------- */
+  .burst{
+    position:fixed;width:13px;height:13px;z-index:45;pointer-events:none;
+    border-radius:82% 4% 82% 4%;
+    animation:burstAnim ease-out forwards;
+  }
+  @keyframes burstAnim{
+    0%{transform:translate(-50%,-50%) scale(.35);opacity:1;}
+    100%{transform:translate(calc(-50% + var(--dx,0px)), calc(-50% + var(--dy,0px))) scale(1.05);opacity:0;}
+  }
+
+  /* ---------- 单击撒爱心粒子 ---------- */
+  .heart{
+    position:fixed;width:16px;height:16px;z-index:46;pointer-events:none;
+    background:radial-gradient(circle at 35% 30%, #ffc2d6, #ff7fa8 60%, #c84478);
+    clip-path:path('M8 13 C1 7 2 1 5 1 C6.5 1 8 3 8 3 C8 3 9.5 1 11 1 C14 1 15 7 8 13 Z');
+    animation:heartFly .9s ease-out forwards;
+  }
+  @keyframes heartFly{
+    0%{transform:translate(-50%,-50%) scale(.4) rotate(0deg);opacity:1;}
+    100%{transform:translate(calc(-50% + var(--dx,0px)), calc(-50% + var(--dy,0px))) scale(1.15) rotate(var(--rot,0deg));opacity:0;}
+  }
+
+  /* ---------- 月亮 + 喜鹊展翅 ---------- */
+  .moon{
+    position:fixed;top:7%;right:10%;width:clamp(120px,17vw,200px);height:clamp(120px,17vw,200px);
+    border-radius:50%;z-index:0;
+    background:radial-gradient(circle at 36% 34%, #fffdf3, #f4eccf 58%, #ddd4ad);
+    box-shadow:0 0 46px 10px rgba(245,233,176,.16), inset -18px -14px 36px rgba(120,110,70,.28);
+  }
+  .moon::before,.moon::after{content:'';position:absolute;border-radius:50%;
+    background:rgba(150,140,100,.16);box-shadow:inset 2px 3px 6px rgba(0,0,0,.10);}
+  .moon::before{width:22%;height:22%;top:26%;left:30%;}
+  .moon::after{width:13%;height:13%;top:56%;left:58%;}
+
+  /* ---------- 果冻图（原地拉扯互动） ---------- */
+  #jelly{
+    position:fixed;left:50%;top:52%;
+    transform-style:preserve-3d;
+    transform:translate(-50%,-50%) rotateX(var(--ry,0deg)) rotateY(var(--rx,0deg)) scale(var(--sc,1)) rotate(var(--rt,0deg));
+    z-index:40;cursor:grab;touch-action:none;
+    opacity:0;transition:opacity 1.2s ease, transform .35s cubic-bezier(.2,.85,.3,1.15);
+    border-radius:20%;
+    box-shadow:
+      0 14px 36px rgba(0,0,0,.42),
+      0 0 60px rgba(255,143,171,.12);
+  }
+  #jelly.show{opacity:1;}
+  #jelly.dragging{cursor:grabbing;transition:transform .05s linear;box-shadow:0 8px 20px rgba(0,0,0,.5);}
+  body{perspective:900px;perspective-origin:50% 40%;}
+
+  /* ---------- 牛郎织女星（相会又分离） ---------- */
+  .vs{
+    position:fixed;width:9px;height:9px;border-radius:50%;z-index:1;pointer-events:none;
+    background:#fffdf3;
+    box-shadow:0 0 20px 7px rgba(255,240,200,.75), 0 0 48px 16px rgba(255,240,200,.22);
+    animation:meetA 16s ease-in-out infinite;
+  }
+  @keyframes meetA{
+    0%,100%{transform:translate(0,0) scale(1);opacity:.8;}
+    50%{transform:translate(34vw,4vh) scale(1.3);opacity:1;}
+  }
+  @keyframes meetB{
+    0%,100%{transform:translate(0,0) scale(1);opacity:.8;}
+    50%{transform:translate(-30vw,-3vh) scale(1.3);opacity:1;}
+  }
+
+  /* ---------- 夜萤 ---------- */
+  .firefly{
+    position:fixed;width:4px;height:4px;border-radius:50%;z-index:20;pointer-events:none;
+    background:#fff7d6;box-shadow:0 0 11px 4px rgba(255,236,160,.5);
+    animation:drift linear infinite alternate, blink ease-in-out infinite;
+    will-change:transform,opacity;
+  }
+  @keyframes drift{0%{transform:translate(0,0);}100%{transform:translate(70px,-110px);}}
+  @keyframes blink{0%,100%{opacity:.12;}50%{opacity:.9;}}
+
+  /* ---------- 鹊桥剪影 ---------- */
+  .bridge{
+    position:fixed;left:0;right:0;bottom:0;width:100%;height:24vh;min-height:120px;
+    z-index:2;pointer-events:none;display:block;
+  }
+
+  /* ---------- 花瓣雨 ---------- */
+  .petal{
+    position:fixed;top:-6vh;z-index:30;pointer-events:none;
+    animation:fall linear infinite;
+    will-change:transform;
+  }
+  .petal i{
+    display:block;width:100%;height:100%;
+    border-radius:82% 4% 82% 4%;
+    animation:sway ease-in-out infinite alternate;
+    will-change:transform;
+  }
+  @keyframes fall{
+    0%{transform:translate3d(0,-6vh,0);}
+    100%{transform:translate3d(-10vw,112vh,0);}
+  }
+  @keyframes sway{
+    0%{transform:translateX(-14px) rotate(-40deg);}
+    100%{transform:translateX(14px) rotate(50deg);}
+  }
+
+  /* ---------- 孔明灯 ---------- */
+  .lantern{
+    position:fixed;bottom:-14vh;z-index:25;pointer-events:none;
+    background:radial-gradient(circle at 50% 62%, #ffe9b0, #f2a65a 62%, #d97b3f 88%);
+    border-radius:46% 46% 42% 42%/60% 60% 38% 38%;
+    box-shadow:0 0 13px 4px rgba(245,200,120,.30);
+    animation:lanternRise linear infinite;
+    will-change:transform,opacity;
+  }
+  .lantern::after{
+    content:'';position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);
+    width:34%;height:6px;background:#7a4e24;border-radius:2px;
+  }
+  @keyframes lanternRise{
+    0%{transform:translate3d(0,0,0) scale(.9);opacity:0;}
+    7%{opacity:.95;}
+    80%{opacity:.85;}
+    100%{transform:translate3d(5vw,-120vh,0) scale(1.06);opacity:0;}
+  }
+  /* ---------- 蹂躏计时器 ---------- */
+  #timer{
+    position:fixed;top:3%;left:50%;transform:translateX(-50%);
+    z-index:48;font-size:clamp(14px,3vw,20px);letter-spacing:.15em;
+    color:var(--gold-soft);text-shadow:0 0 18px rgba(245,217,139,.5);
+    opacity:0;transition:opacity .6s ease;pointer-events:none;
+    background:rgba(20,9,48,.55);padding:8px 22px;border-radius:999px;
+    border:1px solid rgba(255,194,214,.2);
+  }
+  #timer.show{opacity:1;}
+  /* ---------- 返回上一步 ---------- */
+  #backBtn{
+    position:fixed;top:3%;left:3%;z-index:55;
+    padding:9px 20px;border-radius:999px;cursor:pointer;
+    background:rgba(20,9,48,.6);border:1px solid rgba(245,217,139,.3);
+    color:var(--gold-soft);font-size:13px;letter-spacing:.15em;
+    opacity:0;visibility:hidden;transition:opacity .4s ease,visibility .4s ease,transform .15s ease;
+  }
+  #backBtn.show{opacity:1;visibility:visible;}
+  #backBtn:active{transform:scale(.94);}
+
+</style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+<div class="milky"></div>
+<div class="moon"></div>
+<div class="vs" style="left:15%;top:24%;"></div>
+<div class="vs" style="right:20%;top:50%;animation-name:meetB;animation-delay:4s;"></div>
+<div id="skyMagpies"></div>
+
+<!-- 鹊桥剪影 -->
+<svg class="bridge" viewBox="0 0 800 220" preserveAspectRatio="xMidYMax slice">
+  <path d="M0,220 L0,150 Q140,104 280,146 Q400,180 520,140 Q660,102 800,158 L800,220 Z" fill="#0e1434"/>
+  <path d="M150,220 Q400,58 650,220" fill="none" stroke="#1c2653" stroke-width="16" stroke-linecap="round"/>
+  <path d="M150,220 Q400,58 650,220" fill="none" stroke="rgba(245,217,139,.38)" stroke-width="2.5"/>
+  <g transform="translate(160,162) scale(.5)" fill="#04060f">
+    <path d="M54,42 L6,32 Q2,35 6,39 L54,52 Z"/><ellipse cx="66" cy="44" rx="18" ry="11"/><circle cx="88" cy="36" r="9.5"/><path d="M97,35 L107,37 L97,41 Z"/>
+  </g>
+  <g transform="translate(640,162) scale(-.5,.5)" fill="#04060f">
+    <path d="M54,42 L6,32 Q2,35 6,39 L54,52 Z"/><ellipse cx="66" cy="44" rx="18" ry="11"/><circle cx="88" cy="36" r="9.5"/><path d="M97,35 L107,37 L97,41 Z"/>
+  </g>
+</svg>
+
+<canvas id="jelly"></canvas>
+<audio id="bgm" src="爱在西元前.mp3" loop></audio>
+<div id="timer">已蹂躏 0 秒</div>
+<button id="backBtn">← 返回上一步</button>
+
+<!-- 开场 -->
+<div id="intro">
+  <div class="intro-line">祝进击的巨人主群里面的群友们七夕快乐</div>
+  <div class="intro-sub">这是我们巨人模组度过的第 6 个七夕</div>
+</div>
+
+<div class="tap-hint" id="tapHint">
+  <div class="hint-arrow"></div>
+  <div id="hintText">轻触继续</div>
+</div>
+
+<!-- 留名阶段 -->
+<div id="nameStage">
+  <div class="name-card">
+    <div class="name-deco"><svg viewBox="0 0 24 24"><path d="M12 21s-6.7-4.3-9.3-8C.9 10 2 6.5 5.2 6 7 5.7 8.8 6.8 12 9.3 15.2 6.8 17 5.7 18.8 6 22 6.5 23.1 10 21.3 13c-2.6 3.7-9.3 8-9.3 8z"/></svg></div>
+    <div class="name-title">留下你的名字</div>
+    <div class="name-sub">— 愿星光记住每一位群友 —</div>
+    <div class="name-input-row">
+      <input id="nameInput" type="text" maxlength="12" placeholder="群友名字…" autocomplete="off" />
+      <button id="nameSubmit">留下</button>
+    </div>
+    <div class="name-list-title">已经来过的群友</div>
+    <div class="name-list" id="nameList"></div>
+    <button class="name-back" id="nameBack">返回星空 ✦</button>
+  </div>
+</div>
+
+<script>
+/* 喜鹊 SVG：近黑身体 + 细白描边勾勒 + 白腹 + 白翅斑 + 长尾（SMIL 扇翅） */
+const MAGPIE_SVG='<svg viewBox="0 0 130 70" xmlns="http://www.w3.org/2000/svg"><path d="M54,42 L6,32 Q2,35 6,39 L54,52 Z" fill="#14151f" stroke="#c8d0e8" stroke-width="1"/><ellipse cx="66" cy="44" rx="18" ry="11" fill="#14151f" stroke="#c8d0e8" stroke-width="1"/><path d="M56,49 Q68,60 80,50 Q72,56 62,55 Q56,53 56,49 Z" fill="#f5f7ff"/><g><animateTransform attributeName="transform" type="rotate" values="20 64 44;-22 64 44;20 64 44" dur="0.5s" repeatCount="indefinite"/><path d="M70,38 Q44,4 22,8 Q44,24 66,46 Z" fill="#14151f" stroke="#c8d0e8" stroke-width="1"/><path d="M48,18 Q32,10 26,12 Q40,22 54,26 Z" fill="#e8ecf5"/></g><circle cx="88" cy="36" r="9.5" fill="#14151f" stroke="#c8d0e8" stroke-width="1"/><path d="M97,35 L107,37 L97,41 Z" fill="#8a92b8"/><circle cx="91" cy="33" r="1.9" fill="#f5f7ff"/></svg>';
+/* ---------- 星空 ---------- */
+(function(){
+  const cv=document.getElementById('stars');
+  const ctx=cv.getContext('2d');
+  let w,h,stars=[],meteors=[];
+  function resize(){w=cv.width=innerWidth;h=cv.height=innerHeight;build();}
+  function build(){
+    stars=[];
+    const n=Math.min(110,Math.floor(w*h/11000));
+    for(let i=0;i<n;i++){
+      stars.push({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.4+.3,
+        a:Math.random(),s:Math.random()*.02+.004,d:Math.random()<.5?1:-1,
+        c:Math.random()<.15?'255,143,171':(Math.random()<.3?'245,217,139':'255,255,255')});
+    }
+  }
+  function spawnMeteor(){
+    meteors.push({x:Math.random()*w*.8,y:-20,len:Math.random()*120+80,
+      vx:Math.random()*3+4,vy:Math.random()*3+5,life:0,max:60});
+  }
+  let lastT=0;
+  function loop(t){
+    requestAnimationFrame(loop);
+    if(t-lastT<41) return;          // 约 24fps，降低 CPU 开销
+    lastT=t;
+    ctx.clearRect(0,0,w,h);
+    for(const s of stars){
+      s.a+=s.s*s.d;
+      if(s.a>1){s.a=1;s.d=-1;} if(s.a<0.1){s.a=0.1;s.d=1;}
+      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,7);
+      ctx.fillStyle='rgba('+s.c+','+s.a+')';ctx.fill();
+    }
+    for(let i=meteors.length-1;i>=0;i--){
+      const m=meteors[i];m.x+=m.vx;m.y+=m.vy;m.life++;
+      const g=ctx.createLinearGradient(m.x,m.y,m.x-m.vx*8,m.y-m.vy*8);
+      g.addColorStop(0,'rgba(255,233,176,'+(1-m.life/m.max)+')');
+      g.addColorStop(1,'rgba(255,233,176,0)');
+      ctx.strokeStyle=g;ctx.lineWidth=2;ctx.beginPath();
+      ctx.moveTo(m.x,m.y);ctx.lineTo(m.x-m.vx*8,m.y-m.vy*8);ctx.stroke();
+      if(m.life>m.max||m.y>h+40)meteors.splice(i,1);
+    }
+  }
+  addEventListener('resize',resize);resize();requestAnimationFrame(loop);
+  setInterval(()=>{if(document.visibilityState==='visible'&&Math.random()<.6)spawnMeteor();},4200);
+})();
+
+/* ---------- 分幕流程：文字 → 喜鹊飞过 → 主画面 → 留名 ---------- */
+(function(){
+  const intro=document.getElementById('intro');
+  const flock=document.getElementById('skyMagpies');
+  const introLine=document.querySelector('.intro-line');
+  const introSub=document.querySelector('.intro-sub');
+  const hint=document.getElementById('tapHint');
+  const hintText=document.getElementById('hintText');
+  const nameStage=document.getElementById('nameStage');
+  const nameInput=document.getElementById('nameInput');
+  const nameList=document.getElementById('nameList');
+
+  function spawnMagpie(scale){
+    const m=document.createElement('div');
+    m.className='fly-magpie';
+    // 每只扇翅频率错开，更自然
+    m.innerHTML=MAGPIE_SVG.replace('dur="0.5s"','dur="'+(0.4+Math.random()*0.3).toFixed(2)+'s"');
+    m.style.top=(8+Math.random()*72)+'%';
+    m.style.width=((62+Math.random()*60)*(scale||1)).toFixed(0)+'px';
+    const dur=(2.4+Math.random()*0.9).toFixed(2);
+    const delay=(Math.random()*0.4).toFixed(2);
+    m.style.animation='flyAcross '+dur+'s linear '+delay+'s forwards';
+    flock.appendChild(m);
+    setTimeout(()=>m.remove(),(parseFloat(dur)+parseFloat(delay))*1000+300);
+  }
+
+  /* ---------- 留名：服务端实时同步 ---------- */
+  function renderNames(a){
+    nameList.innerHTML='';
+    if(!a.length){
+      nameList.innerHTML='<div class="name-empty">还没有人留下名字，来抢第一</div>';
+      return;
+    }
+    const total=a.length;
+    a.slice().reverse().forEach(function(it,i){
+      const row=document.createElement('div');
+      row.className='name-row';
+      row.style.animationDelay=(Math.min(i,10)*0.05)+'s';
+      const idx=document.createElement('span');
+      idx.className='idx'; idx.textContent=(total-i)+'.';
+      const nm=document.createElement('span');
+      nm.className='nm'; nm.textContent=it.name;
+      row.appendChild(idx); row.appendChild(nm);
+      nameList.appendChild(row);
+    });
+  }
+  function fetchNames(){
+    return fetch('/api/names').then(function(r){return r.json();}).then(renderNames).catch(function(){
+      nameList.innerHTML='<div class="name-empty">名单加载失败，请稍后重试</div>';
+    });
+  }
+  // SSE 实时通道：任何人提交，所有打开的页面同步刷新
+  try{
+    const es=new EventSource('/api/stream');
+    es.onmessage=function(e){ try{ renderNames(JSON.parse(e.data)); }catch(_){} };
+  }catch(_){}
+  document.getElementById('nameSubmit').addEventListener('click',function(){
+    const v=nameInput.value.trim();
+    if(!v) return;
+    nameInput.value='';
+    fetch('/api/names',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name:v})
+    }).then(fetchNames).catch(fetchNames);
+  });
+  nameInput.addEventListener('keydown',function(e){
+    if(e.key==='Enter') document.getElementById('nameSubmit').click();
+  });
+  document.getElementById('nameBack').addEventListener('click',function(){
+    nameStage.classList.remove('show');
+  });
+
+  let stage=1, hintOn=false;
+  /* ---------- 背景音乐：自动播放+循环 ---------- */
+  const bgm=document.getElementById('bgm');
+  bgm.volume=0.6;
+  function tryPlayBgm(){
+    bgm.play().catch(function(){
+      // 浏览器阻止自动播放时，等首次交互再播
+      const once=function(){ bgm.play().catch(function(){}); document.removeEventListener('pointerdown',once); document.removeEventListener('keydown',once); };
+      document.addEventListener('pointerdown',once); document.addEventListener('keydown',once);
+    });
+  }
+  tryPlayBgm();
+  /* ---------- 蹂躏计时器 ---------- */
+  const timerEl=document.getElementById('timer');
+  let timerInterval=null, timerSeconds=0;
+  function startTimer(){
+    timerSeconds=0; timerEl.textContent='已蹂躏 0 秒'; timerEl.classList.add('show');
+    timerInterval=setInterval(function(){ timerSeconds++; timerEl.textContent='已蹂躏 '+timerSeconds+' 秒'; },1000);
+  }
+  function stopTimer(){ clearInterval(timerInterval); timerInterval=null; timerEl.classList.remove('show'); }
+  /* ---------- 返回上一步 ---------- */
+  const backBtn=document.getElementById('backBtn');
+  function updateBackBtn(){ if(stage>=3) backBtn.classList.add('show'); else backBtn.classList.remove('show'); }
+  backBtn.addEventListener('click',function(){
+    if(stage<=1) return;
+    hideHint();
+    if(stage===4){
+      nameStage.classList.remove('show'); stage=3;
+      hintText.textContent='轻触继续 · 去留名'; setTimeout(showHint,1500);
+    }else if(stage===3){
+      stopTimer(); intro.classList.remove('hide');
+      const jelly=document.getElementById('jelly'); jelly.classList.remove('show');
+      stage=1; introLine.classList.remove('fade','play'); introSub.classList.remove('fade','play');
+      setTimeout(function(){ introLine.classList.add('play'); introSub.classList.add('play'); },80);
+      setTimeout(showHint,2100);
+    }
+    updateBackBtn();
+  });
+  function showHint(){ hint.classList.add('show'); hintOn=true; }
+  function hideHint(){ hint.classList.remove('show'); hintOn=false; }
+
+  function enterStage(){
+    if(stage===1){
+      // 第一幕：祝福文字浮现
+      stopTimer(); updateBackBtn();
+      introLine.classList.add('play');
+      introSub.classList.add('play');
+      setTimeout(showHint,2100);
+    }else if(stage===2){
+      // 喜鹊转场：飞过之后自动揭开主画面（不需要点击）
+      stopTimer(); updateBackBtn();
+      introLine.classList.add('fade');
+      introSub.classList.add('fade');
+      const total=14;
+      for(let i=0;i<total;i++) setTimeout(()=>spawnMagpie(), i*140);
+      setTimeout(function(){ stage=3; enterStage(); }, total*140+4600);
+    }else if(stage===3){
+      // 第三幕：揭开主画面（果冻互动），稍后提示可去留名
+      intro.classList.add('hide');
+      hideHint();
+      hintText.textContent='轻触继续 · 去留名';
+      startTimer(); updateBackBtn();
+      setTimeout(showHint,3000);
+    }else if(stage===4){
+      // 第四幕：留名页
+      stopTimer(); updateBackBtn();
+      hideHint();
+      nameStage.classList.add('show');
+      fetchNames();
+    }
+  }
+  function nextStage(){ hideHint(); stage++; enterStage(); }
+  enterStage();
+
+  document.addEventListener('pointerdown',(e)=>{
+    if(e.target && e.target.closest && e.target.closest('#jelly')) return;
+    if(e.target && e.target.closest && e.target.closest('#nameStage')) return;
+    if((stage===1||stage===3) && hintOn) nextStage();
+  });
+
+  // 主画面后每隔几秒自动飞过一只喜鹊（氛围）
+  setInterval(function(){
+    if(document.visibilityState==='visible'&&stage>=3&&!nameStage.classList.contains('show')) spawnMagpie(1+Math.random()*0.3);
+  },9000);
+})();
+
+/* ---------- 果冻图：原地拉扯（拉皮肤效果） ---------- */
+(function(){
+  const cv=document.getElementById('jelly');
+  const ctx=cv.getContext('2d');
+  const intro=document.getElementById('intro');
+  const img=new Image();
+  img.src='character.jpg';
+
+  const COLS=8, ROWS=8;
+  let W=0,H=0,pts=[],ready=false;
+  let mode='idle';               // idle | hold(按住) | pull(拖动) | stretch(长按拉长)
+  let tiltActive=true;            // 主画面空闲时，3D 倾斜跟随是否启用
+  let grabX=0,grabY=0,px=0,py=0;
+  let pressX=0,pressY=0;
+  let stretchDirX=0,stretchDirY=0,stretchLen=0;
+  let holdTimer=null;
+  let raf=null;
+
+  img.onload=function(){ setup(); revealCheck(); };
+
+  function setup(){
+    const size=Math.round(Math.min(Math.max(innerWidth*0.62,300),700));
+    W=size; H=size;
+    const dpr=Math.min(window.devicePixelRatio||1,1.25);
+    cv.width=W*dpr; cv.height=H*dpr;
+    cv.style.width=W+'px'; cv.style.height=H+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    pts=[];
+    for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+      const rx=c/(COLS-1)*W, ry=r/(ROWS-1)*H;
+      pts.push({rx:rx,ry:ry,x:rx,y:ry,vx:0,vy:0});
+    }
+    ready=true;
+    draw();
+  }
+
+  function physics(){
+    const k=0.16, damp=0.80;
+    for(let i=0;i<pts.length;i++){
+      const p=pts[i];
+      let tx=p.rx, ty=p.ry;
+      if(mode==='pull'||mode==='stretch'){
+        const dx=p.rx-grabX, dy=p.ry-grabY;
+        const d=Math.sqrt(dx*dx+dy*dy);
+        const R=W*(mode==='stretch'?0.5:0.6);
+        if(d<R){
+          const inf=Math.cos(d/R*Math.PI/2);
+          const f=inf*inf;
+          let tx0=px, ty0=py;
+          if(mode==='stretch'){
+            stretchLen=Math.min(stretchLen+3.2, W*0.4);   // 长按持续拉长
+            tx0=grabX+stretchDirX*stretchLen;
+            ty0=grabY+stretchDirY*stretchLen;
+          }
+          tx=p.rx+(tx0-grabX)*f;
+          ty=p.ry+(ty0-grabY)*f;
+        }
+      }
+      p.vx=(p.vx+(tx-p.x)*k)*damp;
+      p.vy=(p.vy+(ty-p.y)*k)*damp;
+      p.x+=p.vx; p.y+=p.vy;
+    }
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const iw=img.naturalWidth, ih=img.naturalHeight;
+    const mx=iw/W, my=ih/H;
+    for(let r=0;r<ROWS-1;r++){
+      for(let c=0;c<COLS-1;c++){
+        const i=r*COLS+c;
+        tri(pts[i],pts[i+1],pts[i+COLS],mx,my);
+        tri(pts[i+1],pts[i+COLS+1],pts[i+COLS],mx,my);
+      }
+    }
+  }
+
+  function tri(p0,p1,p2,mx,my){
+    const u0=p0.rx*mx, v0=p0.ry*my;
+    const u1=p1.rx*mx, v1=p1.ry*my;
+    const u2=p2.rx*mx, v2=p2.ry*my;
+    const den=(u1-u0)*(v2-v0)-(u2-u0)*(v1-v0);
+    if(Math.abs(den)<1e-6) return;
+    const a=((p1.x-p0.x)*(v2-v0)-(p2.x-p0.x)*(v1-v0))/den;
+    const b=((p2.x-p0.x)*(u1-u0)-(p1.x-p0.x)*(u2-u0))/den;
+    const c=((p1.y-p0.y)*(v2-v0)-(p2.y-p0.y)*(v1-v0))/den;
+    const d=((p2.y-p0.y)*(u1-u0)-(p1.y-p0.y)*(u2-u0))/den;
+    const e=p0.x-a*u0-b*v0;
+    const f=p0.y-c*u0-d*v0;
+    const cx=(p0.x+p1.x+p2.x)/3, cy=(p0.y+p1.y+p2.y)/3;
+    ctx.save();
+    ctx.beginPath();
+    exp(p0); exp(p1); exp(p2);
+    ctx.closePath();
+    ctx.clip();
+    ctx.transform(a,c,b,d,e,f);
+    ctx.drawImage(img,0,0);
+    ctx.restore();
+    function exp(p){
+      const dx=p.x-cx, dy=p.y-cy;
+      const l=Math.sqrt(dx*dx+dy*dy)||1;
+      ctx.lineTo(p.x+dx/l*1.2, p.y+dy/l*1.2);
+    }
+  }
+
+  let lastFT=0;
+  function loop(t){
+    if(t-lastFT<30){ raf=requestAnimationFrame(loop); return; }   // 果冻渲染限 30fps
+    lastFT=t;
+    physics();
+    draw();
+    if(mode==='idle'){
+      let moving=false;
+      for(let i=0;i<pts.length;i++){
+        const p=pts[i];
+        if(Math.abs(p.vx)>0.02||Math.abs(p.vy)>0.02||Math.abs(p.x-p.rx)>0.1||Math.abs(p.y-p.ry)>0.1){moving=true;break;}
+      }
+      if(!moving){
+        for(let i=0;i<pts.length;i++){const p=pts[i];p.x=p.rx;p.y=p.ry;p.vx=0;p.vy=0;}
+        draw();
+        raf=null;
+        return;
+      }
+    }
+    raf=requestAnimationFrame(loop);
+  }
+  function kick(){ if(!raf&&ready) raf=requestAnimationFrame(loop); }
+
+  function toLocal(e){
+    const r=cv.getBoundingClientRect();
+    return {x:e.clientX-r.left, y:e.clientY-r.top};
+  }
+  const pointers={};
+  let pinchActive=false;
+  const pinch={d0:1,a0:0,scale:1,rot:0};
+  let lastTapT=0,lastTapX=0,lastTapY=0;
+
+  function applyPinch(){
+    cv.style.setProperty('--sc',pinch.scale.toFixed(3));
+    cv.style.setProperty('--rt',pinch.rot.toFixed(2)+'deg');
+  }
+  function distP(p,q){ return Math.hypot(p.x-q.x,p.y-q.y); }
+  function angleP(p,q){ return Math.atan2(p.y-q.y,p.x-q.x); }
+  const burstColors=[
+    'radial-gradient(circle at 30% 30%, #ffd9e6, #ff7fa8)',
+    'radial-gradient(circle at 30% 30%, #fff0f5, #ffc2d6)',
+    'radial-gradient(circle at 30% 30%, #ffe9b0, #f5c86e)'
+  ];
+  function burstPetal(x,y){
+    const rect=cv.getBoundingClientRect();
+    for(let i=0;i<14;i++){
+      const s=document.createElement('span');
+      s.className='burst';
+      s.style.left=(rect.left+x)+'px';
+      s.style.top=(rect.top+y)+'px';
+      const ang=Math.random()*Math.PI*2;
+      const dp=50+Math.random()*95;
+      s.style.setProperty('--dx',(Math.cos(ang)*dp).toFixed(0)+'px');
+      s.style.setProperty('--dy',(Math.sin(ang)*dp-50).toFixed(0)+'px');
+      s.style.animationDuration=(0.7+Math.random()*0.5).toFixed(2)+'s';
+      s.style.background=burstColors[i%burstColors.length];
+      document.body.appendChild(s);
+      setTimeout(()=>s.remove(),1400);
+    }
+  }
+  // 单击撒小爱心
+  function burstHearts(cx,cy){
+    for(let i=0;i<7;i++){
+      const h=document.createElement('span');
+      h.className='heart';
+      h.style.left=cx+'px'; h.style.top=cy+'px';
+      const ang=Math.random()*Math.PI*2;
+      const dp=40+Math.random()*70;
+      h.style.setProperty('--dx',(Math.cos(ang)*dp).toFixed(0)+'px');
+      h.style.setProperty('--dy',(Math.sin(ang)*dp-30).toFixed(0)+'px');
+      h.style.setProperty('--rot',(Math.random()*120-60).toFixed(0)+'deg');
+      h.style.animationDuration=(0.7+Math.random()*0.4).toFixed(2)+'s';
+      document.body.appendChild(h);
+      setTimeout(()=>h.remove(),1200);
+    }
+  }
+
+  cv.addEventListener('pointerdown',function(e){
+    if(!ready) return;
+    e.preventDefault();
+    try{ cv.setPointerCapture(e.pointerId); }catch(_){}
+    // 触摸图时归零 3D 倾斜，避免拉扯时还带着倾斜
+    tiltActive=false;
+    cv.style.setProperty('--rx','0deg');
+    cv.style.setProperty('--ry','0deg');
+    pointers[e.pointerId]={x:e.clientX,y:e.clientY};
+    const ids=Object.keys(pointers);
+    if(ids.length>=2){
+      // 第二指落下 → 双指捏合缩放/旋转
+      clearTimeout(holdTimer);
+      mode='idle';
+      cv.classList.remove('dragging');
+      pinchActive=true;
+      const p1=pointers[ids[0]], p2=pointers[ids[1]];
+      pinch.d0=distP(p1,p2); pinch.a0=angleP(p1,p2);
+      pinch.scale=1; pinch.rot=0;
+      applyPinch();
+      return;
+    }
+    // 双击检测
+    const now=performance.now();
+    if(now-lastTapT<320 && Math.hypot(e.clientX-lastTapX,e.clientY-lastTapY)<55){
+      clearTimeout(holdTimer);
+      mode='idle';
+      const l=toLocal(e);
+      burstPetal(l.x,l.y);
+      lastTapT=0;
+      return;
+    }
+    lastTapT=now; lastTapX=e.clientX; lastTapY=e.clientY;
+
+    cv.classList.add('dragging');
+    const l=toLocal(e);
+    grabX=l.x; grabY=l.y; px=l.x; py=l.y;
+    mode='hold'; stretchLen=0;
+    pressX=l.x; pressY=l.y;
+    const cx=W/2, cy=H/2;
+    const ddx=grabX-cx, ddy=grabY-cy;
+    const dl=Math.hypot(ddx,ddy)||1;
+    stretchDirX=ddx/dl; stretchDirY=ddy/dl;
+    // 长按 450ms 不松手不拖动 → 触发"拉长"
+    holdTimer=setTimeout(function(){
+      if(mode==='hold') mode='stretch';
+    },450);
+    kick();
+  });
+  window.addEventListener('pointermove',function(e){
+    if(!ready) return;
+    if(pointers[e.pointerId]) pointers[e.pointerId]={x:e.clientX,y:e.clientY};
+    if(pinchActive){
+      const ids=Object.keys(pointers);
+      if(ids.length>=2){
+        const p1=pointers[ids[0]], p2=pointers[ids[1]];
+        const d=distP(p1,p2), a=angleP(p1,p2);
+        pinch.scale=Math.min(Math.max(d/pinch.d0,0.5),2.2);
+        pinch.rot=(a-pinch.a0)*180/Math.PI;
+        applyPinch();
+      }
+      return;
+    }
+    if(mode==='hold'){
+      const l=toLocal(e);
+      if(Math.hypot(l.x-pressX,l.y-pressY)>12){
+        mode='pull';
+        clearTimeout(holdTimer);
+        px=l.x; py=l.y;
+      }
+    }else if(mode==='pull'){
+      const l=toLocal(e);
+      px=l.x; py=l.y;
+    }
+  });
+  function up(e){
+    delete pointers[e.pointerId];
+    if(pinchActive){
+      if(Object.keys(pointers).length<2){
+        pinchActive=false;
+        cv.style.setProperty('--sc','1');
+        cv.style.setProperty('--rt','0deg');
+      }
+      return;
+    }
+    // 单击：按下后没移动且未触发长按 → 撒小爱心
+    if(mode==='hold'){
+      const rect=cv.getBoundingClientRect();
+      burstHearts(rect.left+grabX, rect.top+grabY);
+      mode='idle';
+      cv.classList.remove('dragging');
+      tiltActive=true;
+      kick();
+      return;
+    }
+    if(mode==='idle') return;
+    clearTimeout(holdTimer);
+    mode='idle';
+    cv.classList.remove('dragging');
+    tiltActive=true;
+    kick();
+  }
+  window.addEventListener('pointerup',up);
+  window.addEventListener('pointercancel',up);
+  window.addEventListener('resize',function(){ if(ready) setup(); });
+
+  // === 主画面：3D 倾斜跟随（手指/鼠标在屏幕上移动时 jelly 跟随倾斜）===
+  document.addEventListener('pointermove',function(e){
+    if(document.getElementById('nameStage').classList.contains('show')) return;
+    if(e.target && e.target.closest && (e.target.closest('#jelly')||e.target.closest('#nameStage'))) return;
+    if(!tiltActive) return;
+    const cx=innerWidth/2, cy=innerHeight/2;
+    const dx=(e.clientX-cx)/cx, dy=(e.clientY-cy)/cy;
+    cv.style.setProperty('--rx',Math.max(-12,Math.min(12,dx*12))+'deg');
+    cv.style.setProperty('--ry',Math.max(-12,Math.min(12,-dy*12))+'deg');
+  });
+  // === 留名卡片：触摸/鼠标移动时 3D 倾斜 ===
+  const nameCardEl=document.querySelector('.name-card');
+  const nameStageEl=document.getElementById('nameStage');
+  nameStageEl.addEventListener('pointermove',function(e){
+    if(!nameStageEl.classList.contains('show')) return;
+    const rect=nameCardEl.getBoundingClientRect();
+    const cx=rect.left+rect.width/2, cy=rect.top+rect.height/2;
+    const dx=(e.clientX-cx)/(rect.width/2||1);
+    const dy=(e.clientY-cy)/(rect.height/2||1);
+    nameCardEl.style.setProperty('--tilt-rx',Math.max(-10,Math.min(10,-dy*8))+'deg');
+    nameCardEl.style.setProperty('--tilt-ry',Math.max(-10,Math.min(10,dx*8))+'deg');
+  });
+  nameStageEl.addEventListener('pointerleave',function(){
+    nameCardEl.style.setProperty('--tilt-rx','0deg');
+    nameCardEl.style.setProperty('--tilt-ry','0deg');
+  });
+
+  // 开场结束后淡入
+  function revealCheck(){
+    if(intro.classList.contains('hide')) cv.classList.add('show');
+  }
+  const obs=new MutationObserver(function(){
+    if(intro.classList.contains('hide')){ revealCheck(); obs.disconnect(); }
+  });
+  obs.observe(intro,{attributes:true,attributeFilter:['class']});
+})();
+
+/* ---------- 氛围：花瓣雨 + 孔明灯 ---------- */
+(function(){
+  const petalColors=[
+    'radial-gradient(circle at 30% 30%, #ffd9e6, #ff8fab)',
+    'radial-gradient(circle at 30% 30%, #fff0f5, #ffb3c9)',
+    'radial-gradient(circle at 30% 30%, #ffe9b0, #f5c86e)'
+  ];
+  for(let i=0;i<8;i++){
+    const p=document.createElement('div');
+    p.className='petal';
+    const s=(11+Math.random()*12).toFixed(0);
+    p.style.width=s+'px'; p.style.height=s+'px';
+    p.style.left=(Math.random()*100)+'vw';
+    const dur=9+Math.random()*8;
+    p.style.animationDuration=dur.toFixed(1)+'s';
+    p.style.animationDelay=(-Math.random()*dur).toFixed(1)+'s';
+    p.style.opacity=(0.55+Math.random()*0.4).toFixed(2);
+    const inn=document.createElement('i');
+    inn.style.background=petalColors[i%petalColors.length];
+    inn.style.animationDuration=(2.2+Math.random()*2.4).toFixed(1)+'s';
+    inn.style.animationDelay=(-Math.random()*3).toFixed(1)+'s';
+    p.appendChild(inn);
+    document.body.appendChild(p);
+  }
+  for(let i=0;i<4;i++){
+    const l=document.createElement('div');
+    l.className='lantern';
+    const w=Math.round(32+Math.random()*22);
+    l.style.width=w+'px';
+    l.style.height=Math.round(w*1.3)+'px';
+    l.style.left=(6+Math.random()*88)+'vw';
+    const dur=17+Math.random()*12;
+    l.style.animationDuration=dur.toFixed(1)+'s';
+    l.style.animationDelay=(-Math.random()*dur).toFixed(1)+'s';
+    document.body.appendChild(l);
+  }
+  // 夜萤
+  for(let i=0;i<5;i++){
+    const f=document.createElement('div');
+    f.className='firefly';
+    f.style.left=(4+Math.random()*92)+'vw';
+    f.style.top=(10+Math.random()*80)+'vh';
+    f.style.animationDuration=(5+Math.random()*6).toFixed(1)+'s, '+(1.8+Math.random()*1.6).toFixed(1)+'s';
+    f.style.animationDelay=(-Math.random()*10).toFixed(1)+'s, '+(-Math.random()*3).toFixed(1)+'s';
+    document.body.appendChild(f);
+  }
+})();
+</script>
+</body>
+</html>
